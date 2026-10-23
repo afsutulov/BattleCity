@@ -141,8 +141,7 @@ It is automatically excluded from macOS builds. Icon assets are `assets/icon.png
 ## Implementation and license
 
 The application uses a Go Mega Drive runtime to execute the bundled cartridge
-program. It preserves the original game resources; it is not a complete native
-rewrite of every game rule, and cycle-accurate console equivalence is not claimed.
+program.
 
 Application and adapted runtime: **GPL-3.0**, see [LICENSE](LICENSE).
 Original game resources retain their original ownership. See
