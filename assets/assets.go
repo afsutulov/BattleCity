@@ -1,46 +1,82 @@
+// Package assets contains converted images, maps and PCM sounds only.
+// No cartridge program or console firmware is embedded in this application.
 package assets
 
 import (
-	"bytes"
-	"crypto/sha256"
-	_ "embed"
+	"embed"
+	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/png"
+	"sync"
 )
 
-//go:embed original.gen
-var original []byte
+//go:embed *.png maps.json sounds.json sounds
+var files embed.FS
 
-const SHA256 = "1cad5b6fb2ccbbb4d096ee951927457883ba8931f7df8f5ef19a08dc293a0a2c"
-
-func ROM() ([]byte, error) {
-	if fmt.Sprintf("%x", sha256.Sum256(original)) != SHA256 {
-		return nil, fmt.Errorf("embedded game failed integrity check")
-	}
-	return append([]byte(nil), original...), nil
+type Maps struct {
+	Levels   [][][]uint16 `json:"levels"`
+	Menu     [][]uint16   `json:"menu"`
+	Editor   [][]uint16   `json:"editor"`
+	GameOver [][]uint16   `json:"gameover"`
+	Score1   [][]uint16   `json:"score1"`
+	Score2   [][]uint16   `json:"score2"`
 }
 
-// PlayableROM applies only the requested presentation changes to a private
-// cartridge copy. Original bytes and third-party source notices are retained.
-func PlayableROM() ([]byte, error) {
-	b, err := ROM()
-	if err != nil {
-		return nil, err
+type Resources struct {
+	Tiles [7]image.Image
+	Water [2]image.Image
+	Font  image.Image
+	Icon  image.Image
+	Maps  Maps
+}
+
+var once sync.Once
+var resources Resources
+var loadErr error
+
+func Load() (*Resources, error) {
+	once.Do(func() {
+		loadImage := func(name string) image.Image {
+			f, err := files.Open(name)
+			if err != nil {
+				loadErr = err
+				return nil
+			}
+			defer f.Close()
+			im, _, err := image.Decode(f)
+			if err != nil {
+				loadErr = err
+			}
+			return im
+		}
+		for i := range resources.Tiles {
+			resources.Tiles[i] = loadImage(fmt.Sprintf("tiles-%d.png", i))
+		}
+		for i := range resources.Water {
+			resources.Water[i] = loadImage(fmt.Sprintf("water-%d.png", i))
+		}
+		resources.Font = loadImage("font.png")
+		resources.Icon = loadImage("icon.png")
+		b, err := files.ReadFile("maps.json")
+		if err != nil {
+			loadErr = err
+			return
+		}
+		if err := json.Unmarshal(b, &resources.Maps); err != nil {
+			loadErr = err
+		}
+		if len(resources.Maps.Levels) != 35 {
+			loadErr = fmt.Errorf("invalid map collection")
+		}
+	})
+	return &resources, loadErr
+}
+
+func Sound(name string, pal bool) ([]byte, error) {
+	region := "ntsc"
+	if pal {
+		region = "pal"
 	}
-	if !bytes.Equal(b[0x5d16:0x5d1a], []byte{0x61, 0x00, 0x00, 0xf8}) {
-		return nil, fmt.Errorf("unexpected SEGA splash call; refusing ROM patch")
-	}
-	// Skip only the SEGA logo routine; the preceding game initialization stays.
-	copy(b[0x5d16:0x5d1a], []byte{0x4e, 0x71, 0x4e, 0x71})
-	if !bytes.Equal(b[0x5d1a:0x5d1e], []byte{0x61, 0x00, 0x02, 0x40}) {
-		return nil, fmt.Errorf("unexpected credits call; refusing ROM patch")
-	}
-	// BSR.W showMessage -> two NOPs to skip the author splash.
-	copy(b[0x5d1a:0x5d1e], []byte{0x4e, 0x71, 0x4e, 0x71})
-	const row = 0x26a6d
-	want := []byte{0, 0, 0, 0, 0, 0, 'W', 'W', 'W', 0x69, 'K', 'R', 'I', 'K', 0x1b, 0x1b, 0x69, 'C', 'O', 'M', 0, 0, 0, 0, 0, 0}
-	if !bytes.Equal(b[row:row+26], want) {
-		return nil, fmt.Errorf("unexpected menu URL row; refusing ROM patch")
-	}
-	clear(b[row : row+26])
-	return b, nil
+	return files.ReadFile("sounds/" + region + "/" + name + ".wav")
 }

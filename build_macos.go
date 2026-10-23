@@ -5,7 +5,7 @@
 package main
 
 import (
-	game "battlecity/internal/runtime"
+	game "battlecity/internal/game"
 	"flag"
 	"fmt"
 	"os"

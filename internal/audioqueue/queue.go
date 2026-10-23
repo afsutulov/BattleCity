@@ -1,4 +1,4 @@
-// Package audioqueue bridges the single emulation thread and audio device.
+// Package audioqueue bridges the single game thread and audio device.
 package audioqueue
 
 import "sync"

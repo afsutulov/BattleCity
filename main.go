@@ -3,14 +3,13 @@ package main
 import (
 	"battlecity/assets"
 	"battlecity/internal/audioqueue"
-	machine "battlecity/internal/runtime"
+	machine "battlecity/internal/game"
 	"battlecity/internal/storage"
-	"bytes"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,7 +22,7 @@ import (
 )
 
 type game struct {
-	m           *machine.Machine
+	m           *machine.Game
 	q           *audioqueue.Queue
 	player      *audio.Player
 	tex         *ebiten.Image
@@ -33,7 +32,7 @@ type game struct {
 	notice      string
 	noticeUntil time.Time
 	battery     []byte
-	stageLabels []*image.RGBA
+	mixer       *audioqueue.Mixer
 }
 
 func (g *game) notify(s string) {
@@ -101,9 +100,9 @@ func readPad(player int) uint32 {
 }
 func (g *game) savePath() string {
 	if g.m.PAL {
-		return filepath.Join(g.dir, "slot-pal.state")
+		return filepath.Join(g.dir, "slot-native-pal.json")
 	}
-	return filepath.Join(g.dir, "slot-ntsc.state")
+	return filepath.Join(g.dir, "slot-native-ntsc.json")
 }
 func (g *game) save() error {
 	b, err := g.m.Save()
@@ -121,6 +120,7 @@ func (g *game) load() error {
 		return err
 	}
 	g.q.Clear()
+	g.mixer.Clear()
 	return nil
 }
 func (g *game) Update() error {
@@ -132,9 +132,8 @@ func (g *game) Update() error {
 		if g.m.AtMainMenu() {
 			return ebiten.Termination
 		}
-		if err := g.m.ReturnToMenu(); err != nil {
-			return err
-		}
+		g.m.ReturnToMenu()
+		g.mixer.Clear()
 		g.q.Clear()
 		g.help = false
 		g.noticeUntil = time.Time{}
@@ -165,28 +164,46 @@ func (g *game) Update() error {
 		}
 	}
 	if pressed(ebiten.KeyF8) {
-		battery := g.m.Core.GetSRAM()
+		highscore := g.m.HighScore
 		m, err := machine.New(g.m.PAL)
 		if err != nil {
 			return err
 		}
 		g.m = m
-		g.m.Core.SetSRAM(battery)
+		g.m.HighScore = highscore
+		g.mixer.Clear()
 		g.q.Clear()
-		g.notify("Console reset")
+		g.notify("Game reset")
 	}
 	var p1, p2 uint32
 	if !returning {
 		p1, p2 = readPad(0), readPad(1)
 	}
-	g.q.Push(g.m.Step(p1, p2))
+	g.m.Step(p1, p2)
+	for _, event := range g.m.Events {
+		g.mixer.Play(event.Name, event.Priority)
+	}
+	if !g.mixer.Busy() && g.m.Mode == machine.Playing && !g.m.Paused && !g.m.Lost {
+		name := ""
+		for i := 0; i < 2; i++ {
+			if g.m.Tanks[i].HP != 0 {
+				name = "engine_idle"
+			}
+		}
+		for i := 0; i < 2; i++ {
+			if g.m.Tanks[i].HP != 0 && g.m.Tanks[i].Speed != 0 {
+				name = "engine_move"
+			}
+		}
+		if name != "" {
+			g.mixer.Play(name, 2)
+		}
+	}
+	g.q.Push(g.mixer.Block(g.m.FPS()))
 	if g.m.Frame%120 == 0 {
 		g.persistBattery()
 	}
 	im := g.m.Image()
-	if g.m.SelectingStage() {
-		g.drawStageHelp(im)
-	}
 	if g.tex == nil || g.tex.Bounds().Dx() != im.Rect.Dx() || g.tex.Bounds().Dy() != im.Rect.Dy() {
 		if g.tex != nil {
 			g.tex.Deallocate()
@@ -198,15 +215,17 @@ func (g *game) Update() error {
 }
 
 func (g *game) persistBattery() {
-	b := g.m.Core.GetSRAM()
-	if bytes.Equal(b, g.battery) {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint32(b, g.m.HighScore)
+	binary.BigEndian.PutUint32(b[4:], ^g.m.HighScore)
+	if len(g.battery) == 8 && string(b) == string(g.battery) {
 		return
 	}
 	if err := storage.WriteAtomic(filepath.Join(g.dir, "highscore.sram"), b); err != nil {
 		log.Print(err)
 		return
 	}
-	g.battery = append(g.battery[:0], b...)
+	g.battery = b
 }
 func (g *game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.Black)
@@ -233,7 +252,7 @@ func (g *game) Draw(screen *ebiten.Image) {
 	}
 	if g.help {
 		ebitenutil.DrawRect(screen, 8, 8, 490, 190, color.RGBA{0, 0, 0, 230})
-		ebitenutil.DebugPrintAt(screen, "BATTLE CITY\n\nP1: Arrows / Z X C (or Space) / Enter\nP2: W A S D / G H J / Tab\nGamepads: D-pad / West South East / Start\nSTAGE: Enter select / Space next / C previous\nF1 Help  F5 Save  F9 Load  F8 Reset\nF11 Fullscreen  M Mute  F10 Quit\nEsc: Main menu / Quit from main menu\nIn-game pause: Enter (original Start button)", 16, 16)
+		ebitenutil.DebugPrintAt(screen, "BATTLE CITY - Native Go\n\nP1: Arrows / Z X C (or Space) / Enter\nP2: W A S D / G H J / Tab\nGamepads: D-pad / West South East / Start\nSTAGE: Enter select / Space next / C previous\nF1 Help  F5 Save  F9 Load  F8 Reset\nF11 Fullscreen  M Mute  F10 Quit\nEsc: Main menu / Quit from main menu\nIn-game pause: Enter (original Start button)", 16, 16)
 	}
 	if time.Now().Before(g.noticeUntil) {
 		ebitenutil.DrawRect(screen, 0, float64(screen.Bounds().Dy()-22), float64(screen.Bounds().Dx()), 22, color.RGBA{0, 0, 0, 230})
@@ -241,24 +260,10 @@ func (g *game) Draw(screen *ebiten.Image) {
 	}
 }
 
-func makeStageLabels() []*image.RGBA {
-	labels := []*image.RGBA{}
-	for _, line := range []string{"ENTER  SELECT", "SPACE  NEXT STAGE", "C  PREVIOUS STAGE"} {
-		labels = append(labels, assets.GameText(line))
-	}
-	return labels
-}
-func (g *game) drawStageHelp(frame *image.RGBA) {
-	for i, label := range g.stageLabels {
-		x := (frame.Bounds().Dx() - label.Bounds().Dx()) / 2
-		y := 152 + i*16
-		draw.Draw(frame, image.Rect(x, y, x+label.Bounds().Dx(), y+label.Bounds().Dy()), label, image.Point{}, draw.Over)
-	}
-}
 func (g *game) Layout(w, h int) (int, int) { return max(w, 320), max(h, 240) }
 
 func run() error {
-	pal := flag.Bool("pal", false, "European console timing (50 Hz); default is NTSC (60 Hz)")
+	pal := flag.Bool("pal", false, "50 updates/s; default is 60 updates/s")
 	fullscreen := flag.Bool("fullscreen", false, "start fullscreen")
 	scale := flag.Int("scale", 3, "initial integer window scale, 1..6")
 	aspect := flag.String("aspect", "crt", "crt (4:3 television) or pixel (native square pixels)")
@@ -284,8 +289,12 @@ func run() error {
 		return err
 	}
 	if b, err := os.ReadFile(filepath.Join(dir, "highscore.sram")); err == nil && len(b) == 8 {
-		m.Core.SetSRAM(b)
+		score := binary.BigEndian.Uint32(b)
+		if binary.BigEndian.Uint32(b[4:]) == ^score {
+			m.HighScore = score
+		}
 	}
+	m.RandomSeed ^= uint16(time.Now().UnixNano())
 	q := audioqueue.New()
 	q.Mute(*mute)
 	ctx := audio.NewContext(48000)
@@ -297,13 +306,16 @@ func run() error {
 	p.SetBufferSize(32 * time.Millisecond)
 	p.Play()
 	g := &game{m: m, q: q, player: p, dir: dir, aspect: *aspect, muted: *mute}
-	g.stageLabels = makeStageLabels()
+	g.mixer, err = audioqueue.NewMixer(*pal)
+	if err != nil {
+		return err
+	}
 	defer g.persistBattery()
-	icon, err := assets.WindowIcon()
+	resources, err := assets.Load()
 	if err != nil {
 		return fmt.Errorf("window icon: %w", err)
 	}
-	ebiten.SetWindowIcon([]image.Image{icon})
+	ebiten.SetWindowIcon([]image.Image{resources.Icon})
 	ebiten.SetWindowTitle("Battle City")
 	ebiten.SetWindowSize(256**scale, 224**scale)
 	ebiten.SetWindowSizeLimits(320, 280, -1, -1)

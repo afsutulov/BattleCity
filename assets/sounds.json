@@ -1,0 +1,170 @@
+{
+  "ntsc/begin": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 208041,
+    "priority": 10,
+    "rate": 48000
+  },
+  "ntsc/bonus_appears": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 28804,
+    "priority": 9,
+    "rate": 48000
+  },
+  "ntsc/bonus_collected": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 34404,
+    "priority": 9,
+    "rate": 48000
+  },
+  "ntsc/brick": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 5600,
+    "priority": 3,
+    "rate": 48000
+  },
+  "ntsc/enemy_explosion": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 16801,
+    "priority": 7,
+    "rate": 48000
+  },
+  "ntsc/engine_idle": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 8801,
+    "priority": 2,
+    "rate": 48000
+  },
+  "ntsc/engine_move": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 8001,
+    "priority": 2,
+    "rate": 48000
+  },
+  "ntsc/game_over": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 84011,
+    "priority": 9,
+    "rate": 48000
+  },
+  "ntsc/impact": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 4800,
+    "priority": 6,
+    "rate": 48000
+  },
+  "ntsc/pause": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 29604,
+    "priority": 9,
+    "rate": 48000
+  },
+  "ntsc/player_explosion": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 24803,
+    "priority": 7,
+    "rate": 48000
+  },
+  "ntsc/shot": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 8001,
+    "priority": 5,
+    "rate": 48000
+  },
+  "pal/begin": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 210301,
+    "priority": 10,
+    "rate": 48000
+  },
+  "pal/bonus_appears": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 28802,
+    "priority": 9,
+    "rate": 48000
+  },
+  "pal/bonus_collected": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 35523,
+    "priority": 9,
+    "rate": 48000
+  },
+  "pal/brick": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 5760,
+    "priority": 3,
+    "rate": 48000
+  },
+  "pal/enemy_explosion": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 17281,
+    "priority": 7,
+    "rate": 48000
+  },
+  "pal/engine_idle": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 9600,
+    "priority": 2,
+    "rate": 48000
+  },
+  "pal/engine_move": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 8640,
+    "priority": 2,
+    "rate": 48000
+  },
+  "pal/game_over": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 85456,
+    "priority": 9,
+    "rate": 48000
+  },
+  "pal/impact": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 5760,
+    "priority": 6,
+    "rate": 48000
+  },
+  "pal/pause": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 30722,
+    "priority": 9,
+    "rate": 48000
+  },
+  "pal/player_explosion": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 25922,
+    "priority": 7,
+    "rate": 48000
+  },
+  "pal/shot": {
+    "bits": 16,
+    "channels": 2,
+    "frames": 8640,
+    "priority": 5,
+    "rate": 48000
+  }
+}
