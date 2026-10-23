@@ -28,21 +28,6 @@
 - Сборка для macOS Intel (amd64) и Apple Silicon (arm64), упаковка в `.app` с иконкой.
 - Иконка с танком для окна приложения, Windows EXE и приложения macOS.
 
-## Запуск
-
-Распакуйте архив и запустите:
-
-- **Windows x64:** `bin/BattleCityMD-windows-amd64.exe`.
-- **Linux x64:** `./bin/BattleCityMD-linux-amd64` в графической сессии.
-  Нужны X11/XWayland, OpenGL и библиотеки PulseAudio или ALSA.
-- **macOS Intel:** `bin/BattleCityMD-macos-amd64.app`.
-- **macOS Apple Silicon:** `bin/BattleCityMD-macos-arm64.app`.
-  Откройте соответствующее приложение в Finder. Требуется macOS 12 или новее.
-  Готовые пакеты не проходили нотариализацию Apple.
-
-Для готовых сборок не требуются Go, отдельный эмулятор или подключение к интернету.
-В меню Enter выбирает пункт. Для совместной игры выберите **2 PLAYERS**.
-
 ### Управление
 
 | Действие | Игрок 1 | Игрок 2 |

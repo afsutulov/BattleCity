@@ -28,21 +28,6 @@ graphics, level data and sound, keyboard controls and gamepad support.
 - Custom tank icon for the application window, Windows executable and macOS app.
 - macOS builds for Intel (amd64) and Apple Silicon (arm64), with `.app` packaging.
 
-## Play
-
-Extract the release archive and launch:
-
-- **Windows x64:** `bin/BattleCityMD-windows-amd64.exe`.
-- **Linux x64:** `./bin/BattleCityMD-linux-amd64` in a graphical desktop session.
-  Requires X11/XWayland, OpenGL and PulseAudio or ALSA runtime libraries.
-- **macOS Intel:** `bin/BattleCityMD-macos-amd64.app`.
-- **macOS Apple Silicon:** `bin/BattleCityMD-macos-arm64.app`.
-  Open the matching app in Finder. The bundles target macOS 12 or newer and are
-  not notarized by Apple.
-
-Ready-to-run binaries do not require Go, an external emulator or an internet
-connection. Press Enter to select a menu item. Choose **2 PLAYERS** for local co-op.
-
 ### Controls
 
 | Action | Player 1 | Player 2 |
